@@ -1,0 +1,31 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- script: |
+    npm install --global @cyclonedx/cyclonedx-npm
+    npm i -g typescript ts-node
+    npm install --production --unsafe-perm
+    npm dedupe
+  displayName: 'Run a multi-line script'
+  
+- script: |
+    cyclonedx-npm --output-file '$(Agent.TempDirectory)/bom.xml'
+  displayName: 'Create BOM'
+
+
+- task: upload-bom-dtrack-task@1
+  displayName: 'Upload BOM to Dependency-Track'
+  inputs:
+    bomFilePath: '$(Agent.TempDirectory)/bom.xml'
+    dtrackProjId: 'REPLACE THIS TEXT THE OBJECT INDENTIFIER FROM PROJECT'
+    dtrackAPIKey: 'REPLACE THIS TEXT THE KEY FROM ADMINISTRATION'
+    dtrackURI: 'REPLACE THIS TEXT THE URL OF YOUR DEPENDENCY-TRACK'
+    thresholdAction: 'warn'
+    thresholdCritical: '0'
+    thresholdHigh: '0'
+    thresholdMedium: '0'
+    thresholdLow: '0'

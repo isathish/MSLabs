@@ -1,0 +1,54 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger: none
+
+resources:
+- repo: self
+
+variables:
+  - group: SecurityKeyVault
+
+  # Container registry service connection established during pipeline creation
+  - name: dockerRegistryServiceConnection 
+    value: 'REPLACE WITH THE NAME OF YOUR AZURE CONTAINER REGISTRY FOUND ON AZURE PORTAL'
+  - name: imageRepository
+    value: 'juiceshopgit'
+  - name: containerRegistry
+    value: 'acrdevsecopsandjg.azurecr.io'
+  - name: dockerfilePath
+    value: '$(Build.SourcesDirectory)/Dockerfile'
+  - name: tag
+    value: '$(Build.BuildId)'
+
+  # Agent VM image name
+  - name: vmImageName
+    value: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: CmdLine@2
+      displayName: Replacing Variables
+      inputs:
+        script: |
+          echo Replacing Variables
+          
+          sed -i 's/__2FASecret__/$(2FASecret)/g' frontend/src/app/Services/two-factor-auth-service.spec.ts
+          
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
